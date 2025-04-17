@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: myapp
+      MYSQL_USER: myapp
+      MYSQL_PASSWORD: myapppass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build: 
+      context: ./nodejs-server-app
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./nodejs-server-app:/usr/src/app
+      - /usr/src/app/node_modules
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+      - DB_PORT=3306
+      - DB_USER=myapp
+      - DB_PASSWORD=myapppass
+      - DB_NAME=myapp
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - mysql
+      - redis
+
+  frontend:
+    build:
+      context: ./vue-login
+      dockerfile: Dockerfile
+    ports:
+      - "8100:8100"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
+  redis_data:
